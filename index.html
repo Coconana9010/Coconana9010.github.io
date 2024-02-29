@@ -5,6 +5,17 @@
 		<meta charset="UTF-8">
 		
 		<title>Coconana9010</title>
+		
+		<script>
+			let oLastModif = new Date(document.lastModified)
+		
+			function myFunction() {
+				document.getElementById("demo").innerHTML = "Hello World";
+			}
+		<script>
+		
+</script>
+			
 </head>
 
 <body>
@@ -14,16 +25,20 @@
 		1.1.5
 		<br>
 		<script>
-			let oLastModif = new Date(document.lastModified)
-			//alert("Last modified on")
-			//alert(oLastModif)
+			alert(oLastModif)
 		</script>
 		
 		<br>
 		
-		<form>
-			<input type="submit" value="Press Me!">
-		</form>
+		<button onclick="myFunction()">Click me</button>
+
+		<p id="demo"></p>
+
+		<script>
+			function myFunction() {
+			document.getElementById("demo").innerHTML = "poop";
+			}
+		</script>
 		
 	</p1>
 </body>

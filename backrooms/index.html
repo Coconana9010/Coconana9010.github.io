@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Backrooms Index</title>
+<style>
+  :root{--bg:#0b0d10;--text:#e6eef6;--muted:#9aa6b2;--accent:#7dd3fc}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,Helvetica,sans-serif}
+  .wrap{max-width:980px;margin:18px auto;padding:18px}
+  header{text-align:center;margin-bottom:6px}
+  h1{margin:0;font-size:20px}
+  .searchRow{display:flex;gap:8px;margin-top:12px;justify-content:center}
+  #q{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:#0c1116;color:var(--text)}
+  .btn{padding:10px 14px;border-radius:8px;background:#0f1724;border:1px solid rgba(255,255,255,0.08);cursor:pointer;color:var(--text);font-weight:600}
+  .btn:hover{background:#1b2333}
+  .entries{margin-top:18px}
+  .entry{padding:14px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:12px}
+  .entry h2{margin:0 0 6px;font-size:16px}
+  .entry p{margin:6px 0 0;line-height:1.45;color:#dbe6ef}
+  a.titleLink{color:var(--accent);text-decoration:none}
+  .small{font-size:13px;color:var(--muted);margin-top:6px}
+  @media (max-width:640px){.wrap{padding:12px}.searchRow{flex-direction:column;gap:6px}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Backrooms Index</h1>
+      <div class="searchRow">
+        <input id="q" type="search" placeholder="Search..." autocomplete="off" />
+        <button id="searchBtn" class="btn">Search</button>
+        <button id="viewAllBtn" class="btn" onclick="viewAll()">View All</button>
+      </div>
+    </header>
+
+    <div class="entries" id="entries"></div>
+  </div>
+
+<script>
+// Level data (0-100) — descriptions paraphrased from Backrooms Wiki (Wikidot). Each entry links to the original page for full details.
+const levels = [
+  {id:0,title:'Level 0 — "Tutorial Level"',href:'https://backrooms-wiki.wikidot.com/level-0',desc:'A vast, non-linear expanse of rooms with yellowed wallpaper, damp carpet and buzzing fluorescent lights. Navigation is unreliable, electronics fail or behave oddly, and while the level is quiet of living entities it produces strong sensory strain and hallucinations.'},
+  {id:1,title:'Level 1 — "Habitable Zone"',href:'https://backrooms-wiki.wikidot.com/level-1',desc:'A more stable, often industrial or parking-like space used as a transitional, semi-habitable area. Small communities and outposts have been reported here; resources are limited and certain low to mid-threat entities may be present.'},
+  {id:2,title:'Level 2 — "Abandoned Utility Halls"',href:'https://backrooms-wiki.wikidot.com/level-2',desc:'Long maintenance corridors lined with pipes, steam, and machinery; the area is darker and noisier than earlier levels. Entities that favor dim, industrial spaces can appear, and environmental hazards (heat, pressure, exposed wiring) are common.'},
+  {id:3,title:'Level 3 — "Electrical Station"',href:'https://backrooms-wiki.wikidot.com/level-3',desc:'A hazardous network of transformer rooms, switchgear and humming substations. High voltage, failing insulation, and unpredictable power flows make this level dangerous; migration through it requires caution and knowledge of its routines.'},
+  {id:4,title:'Level 4 — "Abandoned Office"',href:'https://backrooms-wiki.wikidot.com/level-4',desc:'An empty office complex of cubicles, conference rooms and fluorescent corridors that loop in odd ways. Its layout is deceptively familiar but contains anomalies: repeating rooms, strange signage and occasional hostile pockets.'},
+  {id:5,title:'Level 5 — "Terror Hotel"',href:'https://backrooms-wiki.wikidot.com/level-5',desc:'An enormous, decaying hotel with banquet halls, guest rooms and a casino-like heart in some variants. The environment is psychologically disorienting; hostile phenomena and localized dangers are frequent.'},
+  {id:6,title:'Level 6 — "Lights Out"',href:'https://backrooms-wiki.wikidot.com/level-6',desc:'A region characterized by pitch-dark corridors and locations where light sources fail or behave strangely. Entities that use low-light conditions to their advantage are common; careful light management is essential.'},
+  {id:7,title:'Level 7 — "Thalassophobia"',href:'https://backrooms-wiki.wikidot.com/level-7',desc:'A watery, oceanic set of areas ranging from flooded rooms to vast seas; fear of deep water and drowning is a central hazard. Navigation and breathing become primary concerns, and unique aquatic anomalies can appear.'},
+  {id:8,title:'Level 8 — "Cave Systems"',href:'https://backrooms-wiki.wikidot.com/level-8',desc:'Extensive underground caverns with natural stone formations and winding tunnels. Darkness, vertical drops and echoing spaces create navigational hazards; some areas host rare resources or ancient ruins.'},
+  {id:9,title:'Level 9 — "The Suburbs"',href:'https://backrooms-wiki.wikidot.com/level-9',desc:'Residential streets and suburban layouts stretched into the uncanny: identical houses, empty yards and off-kilter geography. The level can be deceptively calm but contains pockets of danger and occasional inhabitants.'},
+  {id:10,title:'Level 10 — "The Bumper Crop"',href:'https://backrooms-wiki.wikidot.com/level-10',desc:'A rural or agricultural environment with fields, barns and crop-like anomalies. Certain zones here can be resource-rich but also hide predators and environmental traps.'},
+  {id:11,title:'Level 11 — "The City That Never Sleeps"',href:'https://backrooms-wiki.wikidot.com/level-11',desc:'A sprawling urban area with skyscrapers, transit systems and neon streets that loop into impossible arrangements. Populated districts, points of interest and human-made outposts can be found, but so can complex threats.'},
+  {id:12,title:'Level 12 — "Matrix"',href:'https://backrooms-wiki.wikidot.com/level-12',desc:'Areas with digital or grid-like geometry where logic and space follow computational patterns. Navigation requires pattern-reading; some zones will alter or rewrite remembered paths.'},
+  {id:13,title:'Level 13 — "The Boiling Frogs"',href:'https://backrooms-wiki.wikidot.com/level-13',desc:'A region with temperature anomalies and biological oddities; environments may shift from comfortable to extreme heat rapidly. Survivors report rapid physiological stress and hostile fauna.'},
+  {id:14,title:'Level 14 — "Paradise"',href:'https://backrooms-wiki.wikidot.com/level-14',desc:'A deceptive oasis of pleasant scenery and restful spaces that may lull wanderers into complacency. While appearing benign, these areas often conceal exits that lead to more perilous levels or traps.'},
+  {id:15,title:'Level 15 — "Futuristic Halls"',href:'https://backrooms-wiki.wikidot.com/level-15',desc:'Sleek, high-tech corridors and exhibition spaces with unfamiliar machines and displays. Technology here can be both a tool and a hazard, and many areas are unstable in function.'},
+  {id:16,title:'Level 16 — "Altered Topography"',href:'https://backrooms-wiki.wikidot.com/level-16',desc:'Terrain and geometry shift unexpectedly: hills become walls, floors become voids. Mapping is unreliable and perception-based navigation often fails.'},
+  {id:17,title:'Level 17 — "The Carrier"',href:'https://backrooms-wiki.wikidot.com/level-17',desc:'A transit-themed level featuring trains, platforms and vehicles that may teleport or loop. Movement here is tied to timing and signals; missing a connection can strand you in isolated zones.'},
+  {id:18,title:'Level 18 — "Memories"',href:'https://backrooms-wiki.wikidot.com/level-18',desc:'A psychologically charged level where architecture and objects evoke personal memories and nostalgia. Extended exposure can alter memory and identity, and the level is prone to illusions.'},
+  {id:19,title:'Level 19 — "Attic Floorboards"',href:'https://backrooms-wiki.wikidot.com/level-19',desc:'A cramped, attic-like environment of wooden structures, tight crawlspaces and creaking floors. Physical entrapment and disorientation are common risks.'},
+  {id:20,title:'Level 20 — "Fun Zone / Boreas Structure"',href:'https://backrooms-wiki.wikidot.com/level-20',desc:'An amusement/entertainment themed level with game rooms, rides and carnival aesthetics that have been warped. The playful surface hides mechanical and social dangers.'},
+  {id:21,title:'Level 21 — "Numbered Doors"',href:'https://backrooms-wiki.wikidot.com/level-21',desc:'Four extremely long hallways lined with repeating doors, each of which may open to different levels or sublevels. The doors can be unpredictable and dangerous; entities are often found in the corridors.'},
+  {id:22,title:'Level 22 — "Ruins Left Behind"',href:'https://backrooms-wiki.wikidot.com/level-22',desc:'A ruined, archaeic landscape of collapsed buildings and relics from lost cultures. Exploration can reveal artifacts and hidden passages but also ancient threats.'},
+  {id:23,title:'Level 23 — "The Petrified Garden"',href:'https://backrooms-wiki.wikidot.com/level-23',desc:'Garden-like spaces frozen or transformed into stone, where flora and fauna behave unnaturally. Movement is slowed and navigation is confusing.'},
+  {id:24,title:'Level 24 — "The Moon"',href:'https://backrooms-wiki.wikidot.com/level-24',desc:'Lunar-like environments with low gravity, barren vistas and a harsh sky; physical mechanics differ from the Frontrooms. Survival depends on adapting to altered physics and exposure.'},
+  {id:25,title:'Level 25 — "The Quarter Hub"',href:'https://backrooms-wiki.wikidot.com/level-25',desc:'A hub-level connecting multiple themed districts; it functions as a transit and trade zone for wanderers. Hubs often attract traders and factions, but can also be contested.'},
+  {id:26,title:'Level 26 — "The SS Fun =)"',href:'https://backrooms-wiki.wikidot.com/level-26',desc:'A nautical/amusement hybrid environment themed like a ship or floating park. Movement and stability vary; some areas are flooded or structurally unsound.'},
+  {id:27,title:'Level 27 — "The Bunker Springs"',href:'https://backrooms-wiki.wikidot.com/level-27',desc:'A subterranean bunker complex with springs or watery conduits; parts are fortified while others are decayed. Resources may be found but territorial entities or traps exist.'},
+  {id:28,title:'Level 28 — "Stormstone Keep"',href:'https://backrooms-wiki.wikidot.com/level-28',desc:'A fortress-like level under constant storm conditions, with weather-driven hazards and cramped defensive spaces. Exploration is physically demanding.'},
+  {id:29,title:'Level 29 — "Hyperian"',href:'https://backrooms-wiki.wikidot.com/level-29',desc:'A surreal, heightened-reality level with amplified sensory inputs and dreamlike features. Perception and scale can fluctuate unpredictably.'},
+  {id:30,title:'Level 30 — "Shifted Beyond Reality"',href:'https://backrooms-wiki.wikidot.com/level-30',desc:'Extreme geometric and ontological shifts make the level unreliable to map; objects and rooms can change identity or function abruptly.'},
+  {id:31,title:'Level 31 — "Roller Rink"',href:'https://backrooms-wiki.wikidot.com/level-31',desc:'A large skating rink and dance-hall environment with warped acoustics and moving floors. The area can be rhythmically hazardous and disorienting.'},
+  {id:32,title:'Level 32 — "Forest of the Skeleton Queen"',href:'https://backrooms-wiki.wikidot.com/level-32',desc:'A dark forest of skeletal trees and oppressive atmosphere ruled by a dominant entity or presence. Avoiding attention is crucial; some paths can lead to fortified hollows.'},
+  {id:33,title:'Level 33 — "The Infinite Mall"',href:'https://backrooms-wiki.wikidot.com/level-33',desc:'An endless shopping mall of identical storefronts and escalators; commercial signage is everywhere and exits are deceptive. Supplies might be found but so are ambushes and hostile agents.'},
+  {id:34,title:'Level 34 — "Sewer System"',href:'https://backrooms-wiki.wikidot.com/level-34',desc:'A network of drainage tunnels, tunnels and water channels; echoing darkness and biological hazards are common. Navigation requires waterproofing and caution.'},
+  {id:35,title:'Level 35 — "An Empty Car Park"',href:'https://backrooms-wiki.wikidot.com/level-35',desc:'A parking structure of repeating levels and ramps with strong claustrophobic geometry; vehicles may be absent but signs of use remain. Avoid enclosed stairwells that loop.'},
+  {id:36,title:'Level 36 — "Airport"',href:'https://backrooms-wiki.wikidot.com/level-36',desc:'An airport terminal blown out across impossible distances with gates, lounges and runways; ambient announcements and broken infrastructure persist. Transit points can lead to unexpected destinations.'},
+  {id:37,title:'Level 37 — "Sublimity"',href:'https://backrooms-wiki.wikidot.com/level-37',desc:'A level of awe-inspiring or transcendent architecture that can induce reverence or disorientation. Careful navigation is needed, as some areas are illusionary.'},
+  {id:38,title:'Level 38 — "Fold Point"',href:'https://backrooms-wiki.wikidot.com/level-38',desc:'Areas where space is folded over itself—shortcuts may exist but can be unstable or collapse. Folding can connect distant sectors in dangerous ways.'},
+  {id:39,title:'Level 39 — "Enchanted Forest"',href:'https://backrooms-wiki.wikidot.com/level-39',desc:'A forested realm with anomalous flora that behaves unpredictably; paths shift and foliage may hide secrets or threats. Some clearings may be temporarily safe.'},
+  {id:40,title:'Level 40 — "Roller Rockin\' Pizza!"',href:'https://backrooms-wiki.wikidot.com/level-40',desc:'A kitschy family-entertainment complex with arcade and pizzeria motifs; areas alternate between playful and menacing. Sound cues and lighting can be used to navigate or trap visitors.'},
+  {id:41,title:'Level 41 — "The Black Lake"',href:'https://backrooms-wiki.wikidot.com/level-41',desc:'A vast dark lake whose shores host submerged anomalies and strange reflections. Waterborne hazards and deceptive depths are the main threats.'},
+  {id:42,title:'Level 42 — "The Horyzon"',href:'https://backrooms-wiki.wikidot.com/level-42',desc:'A horizon-bending landscape where distance and perspective are distorted; landmarks are unreliable and mirages frequent.'},
+  {id:43,title:'Level 43 — "Water World"',href:'https://backrooms-wiki.wikidot.com/level-43',desc:'Large expanses of water dominate this level: flooded cities, islands and tidal anomalies. Boats and flotation can help but exits are seldom obvious.'},
+  {id:44,title:'Level 44 — "Corroding Retail Outlet"',href:'https://backrooms-wiki.wikidot.com/level-44',desc:'A decayed retail store filled with corroded shelving, toxic residues and unstable floors; scavenging is possible but risky.'},
+  {id:45,title:'Level 45 — "Abyss Inc."',href:'https://backrooms-wiki.wikidot.com/level-45',desc:'A corporate-themed abyss of cubicles and offices that extend into voids; bureaucratic motifs are warped into predatory systems.'},
+  {id:46,title:'Level 46 — "Arabian Desert"',href:'https://backrooms-wiki.wikidot.com/level-46',desc:'Sand dunes, scorching heat and mirage-like hazards dominate this desert level. Traveling by day is perilous; resources and shade are scarce.'},
+  {id:47,title:'Level 47 — "The Adderwood"',href:'https://backrooms-wiki.wikidot.com/level-47',desc:'A woodland of winding trails and predatory fauna; the forest hides shifting clearings and hazards that can ambush travelers.'},
+  {id:48,title:'Level 48 — "The Sunset Beach"',href:'https://backrooms-wiki.wikidot.com/level-48',desc:'A seemingly tranquil beach with long sunsets, but tides and strange currents can pull explorers into other zones. Coastal anomalies and water-based entities are common.'},
+  {id:49,title:'Level 49 — "The Unfilled River of Phlegethon"',href:'https://backrooms-wiki.wikidot.com/level-49',desc:'A river-like channel with strange properties—its flow, contents and banks do not match normal water. Local hazards are chemically and metaphysically dangerous.'},
+  {id:50,title:'Level 50 — "The Moribund Highway"',href:'https://backrooms-wiki.wikidot.com/level-50',desc:'An endless highway of rusted vehicles, broken signs and stalled infrastructure. Travel can be faster here but at high risk due to structural collapse and ambushes.'},
+  {id:51,title:'Level 51 — "The Forgotten City"',href:'https://backrooms-wiki.wikidot.com/level-51',desc:'A suspended, ancient city with ruined temples, shifting labyrinths and lost relics. Technology fails here and the ruins suggest a complex society once existed within the Backrooms.'},
+  {id:52,title:'Level 52 — "Eyes On You"',href:'https://backrooms-wiki.wikidot.com/level-52',desc:'A cavernous level where observers and the sensation of being watched dominate the atmosphere; torches and glowing features create pockets of light and shadow. Entities here have adapted to the cave ecology.'},
+  {id:53,title:'Level 53 — "Alone"',href:'https://backrooms-wiki.wikidot.com/level-53',desc:'A solitary, isolated region that imposes psychological pressure through silence and emptiness. Loneliness and memory strain are the main threats.'},
+  {id:54,title:'Level 54 — "Stairwell of Spirals"',href:'https://backrooms-wiki.wikidot.com/level-54',desc:'A vertiginous environment of spiralling staircases that loop and twist; vertical navigation is disorienting and dangerous.'},
+  {id:55,title:'Level 55 — [NO DATA]',href:'https://backrooms-wiki.wikidot.com/level-55',desc:'This level has little public documentation on Wikidot; it is marked as [NO DATA] pending discovery or rewrite. Treat as unverified and potentially hazardous.'},
+  {id:56,title:'Level 56 — "Frostbite"',href:'https://backrooms-wiki.wikidot.com/level-56',desc:'An icy, subzero expanse with frozen surfaces and brittle architecture. Hypothermia, brittle structures and cold-adapted threats are primary concerns.'},
+  {id:57,title:'Level 57 — "Diurnal Art Gallery"',href:'https://backrooms-wiki.wikidot.com/level-57',desc:'A gallery where artworks shift between daylight and darkness, often affecting the space around them. Art here can be interactive and sometimes dangerous in symbolic ways.'},
+  {id:58,title:'Level 58 — "Water Wonder"',href:'https://backrooms-wiki.wikidot.com/level-58',desc:'A collection of water-based anomalous features—lakes, fountains and pools that behave unpredictably. Waterborne anomalies and reflections often conceal exits or traps.'},
+  {id:59,title:'Level 59 — "The Backway"',href:'https://backrooms-wiki.wikidot.com/level-59',desc:'A network of service passages and secret routes that can shortcut between levels; pathways are unstable and may shift underfoot.'},
+  {id:60,title:'Level 60 — "The Baywalk"',href:'https://backrooms-wiki.wikidot.com/level-60',desc:'A promenade-over-water environment with piers, boardwalks and fog. Weather and tidal anomalies influence travel and visibility.'},
+  {id:61,title:'Level 61 — "Floating Skyscrapers"',href:'https://backrooms-wiki.wikidot.com/level-61',desc:'Skyscrapers suspended in void or sky, connected by precarious walkways. Heights and gaps require careful traversal; wind and gravity anomalies are present.'},
+  {id:62,title:'Level 62 — "Jungle Backyard"',href:'https://backrooms-wiki.wikidot.com/level-62',desc:'An overgrown backyard opening onto dense jungle; vegetation obscures paths and conceals predators. Survivors report cryptic ruins and occasional human remains.'},
+  {id:63,title:'Level 63 — "Tranquility"',href:'https://backrooms-wiki.wikidot.com/level-63',desc:'A calm, restorative-seeming area with slow time and quiet spaces; many treat it as a temporary sanctuary, though exits can be deceptive.'},
+  {id:64,title:'Level 64 — "The Lurking Darkness"',href:'https://backrooms-wiki.wikidot.com/level-64',desc:'A deeply shadowed level where vision is unreliable and entities exploit concealment. Ambient dread and stealth threats are common.'},
+  {id:65,title:'Level 65 — "Bloodstained Garden"',href:'https://backrooms-wiki.wikidot.com/level-65',desc:'A garden laced with red-hued flora and unsettling biological hazards; wounds and infections are a major risk when exposed to plant matter.'},
+  {id:66,title:'Level 66 — "Exhibit"',href:'https://backrooms-wiki.wikidot.com/level-66',desc:'An exhibition space where objects are displayed with odd provenance and unpredictable effects. Some exhibits alter perception or rearrange rooms.'},
+  {id:67,title:'Level 67 — "Αρτοποιείο Desire"',href:'https://backrooms-wiki.wikidot.com/level-67',desc:'A bakery-themed level with enticing but anomalous foodstuffs and architecture. Consuming items may have psychological or physical side effects.'},
+  {id:68,title:'Level 68 — "Theater — The Eater"',href:'https://backrooms-wiki.wikidot.com/level-68',desc:'A performance venue where the audience and stage can swap roles; auditory anomalies and predatory phenomena lurk behind curtains.'},
+  {id:69,title:'Level 69 — "The Road Trip of Affliction"',href:'https://backrooms-wiki.wikidot.com/level-69',desc:'A vehicular odyssey level where roads loop through surreal landscapes and traveling consumes supplies at unusual rates.'},
+  {id:70,title:'Level 70 — "Froidetown"',href:'https://backrooms-wiki.wikidot.com/level-70',desc:'A frozen townscape with abandoned homes and brittle streets; local anomalies lock doors and preserve strange artifacts.'},
+  {id:71,title:'Level 71 — "Void Basement"',href:'https://backrooms-wiki.wikidot.com/level-71',desc:'A basement-sized void area where ceilings and walls recede into nothing; spatial collapse and sudden voids are main dangers.'},
+  {id:72,title:'Level 72 — "The Pit"',href:'https://backrooms-wiki.wikidot.com/level-72',desc:'A deep chasm or pit environment with sheer drops, echoing walls and limited light. Vertical navigation and falling hazards dominate.'},
+  {id:73,title:'Level 73 — "(unnamed)"',href:'https://backrooms-wiki.wikidot.com/level-73',desc:'A level with limited public labeling; contents vary by report and may be under revision on the wiki.'},
+  {id:74,title:'Level 74 — "Stage Fright"',href:'https://backrooms-wiki.wikidot.com/level-74',desc:'Performance spaces that induce paranoia and cause stage-like traps; sound and audience-based phenomena can be used against explorers.'},
+  {id:75,title:'Level 75 — (various)',href:'https://backrooms-wiki.wikidot.com/level-75',desc:'Multiple variants and sub-areas exist for this number; consult the source page for current canonical descriptions.'},
+  {id:76,title:'Level 76 — "Back from the Charwood Brink"',href:'https://backrooms-wiki.wikidot.com/level-76',desc:'A region of recovery and relapse: environments may appear reclaimed but harbor lingering threats. Exploration reveals traces of past events and salvageable resources.'},
+  {id:77,title:'Level 77 — "Oh, Shenandoah"',href:'https://backrooms-wiki.wikidot.com/level-77',desc:'Song- or river-themed level with flowing pathways; acoustics and currents can carry entities or displace travelers.'},
+  {id:78,title:'Level 78 — "Space Station"',href:'https://backrooms-wiki.wikidot.com/level-78',desc:'A zero or low-gravity orbital environment with pressurized modules and mechanical anomalies. Breathing and air management are concerns.'},
+  {id:79,title:'Level 79 — "Ghosts in the Machine"',href:'https://backrooms-wiki.wikidot.com/level-79',desc:'Technology and AI-driven phenomena appear to have agency; systems may act with hostile intent or glitch unpredictably.'},
+  {id:80,title:'Level 80 — "Khögshin Highway"',href:'https://backrooms-wiki.wikidot.com/level-80',desc:'A high-speed transit corridor with cultural and geographic oddities lining its margins; travel is often fast but unstable.'},
+  {id:81,title:'Level 81 — "Afterhours Ending"',href:'https://backrooms-wiki.wikidot.com/level-81',desc:'A poetic, quiet office-level with a dreamlike afterhours atmosphere; it can be calming but also disorienting.'},
+  {id:82,title:'Level 82 — "Self-Automated Trade"',href:'https://backrooms-wiki.wikidot.com/level-82',desc:'An automated market or trading floor where machines and protocols run commerce without human oversight; interacting with systems carries unpredictable costs.'},
+  {id:83,title:'Level 83 — "The Sunken Submarine"',href:'https://backrooms-wiki.wikidot.com/level-83',desc:'A flooded submersible environment with narrow corridors and pressurized zones; navigation is constrained and waterborne threats are present.'},
+  {id:84,title:'Level 84 — "The Shifting Hedge Maze"',href:'https://backrooms-wiki.wikidot.com/level-84',desc:'A garden maze where hedges move and route-choice changes dynamically; mapping is difficult and memory can mislead.'},
+  {id:85,title:'Level 85 — "Brilliant Evermore"',href:'https://backrooms-wiki.wikidot.com/level-85',desc:'A luminous, intense-level where brightness and color affect cognition; prolonged exposure can damage perception.'},
+  {id:86,title:'Level 86 — "Rivergate Tower"',href:'https://backrooms-wiki.wikidot.com/level-86',desc:'A tower complex intersected by riverine elements; vertical traversal and water hazards mix to create a challenging environment.'},
+  {id:87,title:'Level 87 — "Hallways of Time"',href:'https://backrooms-wiki.wikidot.com/level-87',desc:'Corridors where time behaves inconsistently—loops, slows, or accelerates relative to the explorer. Temporal disorientation and paradox risks are high.'},
+  {id:88,title:'Level 88 — "Muted Lake"',href:'https://backrooms-wiki.wikidot.com/level-88',desc:'A silent lake environment where sound is dampened; isolation and deceptive calm are common features.'},
+  {id:89,title:'Level 89 — (various)',href:'https://backrooms-wiki.wikidot.com/level-89',desc:'This slot contains a variety of sublevels and themes; details evolve and should be checked on the source page.'},
+  {id:90,title:'Level 90 — "Newly Renovated Home"',href:'https://backrooms-wiki.wikidot.com/level-90',desc:'A domestic-level restored to an unsettling perfection; the home aesthetic hides structural oddities and hostile secrets.'},
+  {id:91,title:'Level 91 — "But a Memory"',href:'https://backrooms-wiki.wikidot.com/level-91',desc:'A memory-laced environment that mirrors personal recollections; interaction can change or erase stored memories.'},
+  {id:92,title:'Level 92 — "Fallout Shelter"',href:'https://backrooms-wiki.wikidot.com/level-92',desc:'Bunker-like shelter spaces with sealed rooms and stored supplies; some sections are stable while others are sealed for a reason.'},
+  {id:93,title:'Level 93 — "The Summit"',href:'https://backrooms-wiki.wikidot.com/level-93',desc:'High-altitude or pinnacle environments with sweeping vistas and exposure to wind and cold; edges are dangerous.'},
+  {id:94,title:'Level 94 — "Motion"',href:'https://backrooms-wiki.wikidot.com/level-94',desc:'Areas that shift, float or carry by motion; constructs and terrain can be in constant transit, making anchors and rest points rare.'},
+  {id:95,title:'Level 95 — "The Underneath"',href:'https://backrooms-wiki.wikidot.com/level-95',desc:'Hidden layers beneath other levels: crawlspaces, basements and service voids that connect deeper networks. Claustrophobia and limited egress are main hazards.'},
+  {id:96,title:'Level 96 — "The Ductwork"',href:'https://backrooms-wiki.wikidot.com/level-96',desc:'A maze of ducts and vents requiring crawling and squeezing to pass; vents can rapidly reconfigure and lead to unknown nodes.'},
+  {id:97,title:'Level 97 — "Lighthouse"',href:'https://backrooms-wiki.wikidot.com/level-97',desc:'A coastal or beacon-themed level where light sources draw or repel entities; the tower itself may be navigable but treacherous.'},
+  {id:98,title:'Level 98 — "Downtown Diner"',href:'https://backrooms-wiki.wikidot.com/level-98',desc:'A small-town diner stretched into a neighborhood of repetitive booths and blinking signs; food-related anomalies and temporal loops can occur.'},
+  {id:99,title:'Level 99 — "Ghoul Town"',href:'https://backrooms-wiki.wikidot.com/level-99',desc:'A town overrun by ghoul-like entities and nocturnal predators; daytime may thin their numbers but safe movement is not guaranteed.'},
+  {id:100,title:'Level 100 — "Silent Sounds"',href:'https://backrooms-wiki.wikidot.com/level-100',desc:'Anomalous areas where auditory phenomena are inverted: silence carries meaning and sounds can wound or mislead. Careful listening and restraint are advised.'}
+];
+
+const entriesRoot = document.getElementById('entries');
+function renderAll(){
+  entriesRoot.innerHTML = '';
+  levels.forEach(L => {
+    const el = document.createElement('div'); el.className='entry'; el.id = `L${L.id}`;
+    el.innerHTML = `<h2><a class="titleLink" href="${L.href}" target="_blank">${L.title}</a></h2><p>${L.desc}</p><div class="small">Source: <a href="${L.href}" target="_blank" class="titleLink">Wikidot</a></div>`;
+    entriesRoot.appendChild(el);
+  });
+}
+renderAll();
+
+function normalize(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+
+// Build a quick lookup from normalized keys to element id
+const lookup = {};
+levels.forEach(L => {
+  lookup[normalize(L.title)] = `L${L.id}`;
+  lookup[`level${L.id}`] = `L${L.id}`;
+  lookup[`l${L.id}`] = `L${L.id}`;
+});
+
+function runSearch(){
+  const raw = document.getElementById('q').value.trim();
+  if(!raw){ viewAll(); return; }
+  const key = normalize(raw);
+  if(lookup[key]){
+    document.querySelectorAll('.entry').forEach(x=>x.style.display='none');
+    const el = document.getElementById(lookup[key]);
+    el.style.display='block';
+    el.scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  // No direct built-in match — attempt auto-redirect to the wikidot level/entity URL guessed from input
+  const autoLevel = raw.match(/(level\s*-?\d+|l\s*-?\d+)/i);
+  if(autoLevel){
+    const num = autoLevel[0].replace(/[a-z\s]/gi,'');
+    window.location.href = `https://backrooms-wiki.wikidot.com/level-${num}`;
+    return;
+  }
+  const autoEntity = raw.match(/entity\s*-?\d+/i);
+  if(autoEntity){
+    const num = autoEntity[0].replace(/[^0-9]/g,'');
+    window.location.href = `https://backrooms-wiki.wikidot.com/entity-${num}`;
+    return;
+  }
+  alert('No built-in match found; try "Level 7" or "Entity 3", or include the exact number.');
+}
+
+document.getElementById('searchBtn').addEventListener('click', runSearch);
+document.getElementById('q').addEventListener('keydown', function(e){ if(e.key==='Enter') runSearch(); });
+
+function viewAll(){
+  document.querySelectorAll('.entry').forEach(x=>x.style.display='block');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

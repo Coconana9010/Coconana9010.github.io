@@ -5,7 +5,28 @@
 <style>
 #jumpscare {position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; cursor: pointer; visibility: hidden;}
 </style>
-<body>
+<body onbeforeunload="return 'Are you sure you want to exit?';">
+  <h1>Press "P" to stop the loop</h1>
+  <p id="status">Running...</p>
+
+  <script>
+    let running = true;
+
+    function loop() {
+      if (!running) return;
+      document.getElementById("status").textContent = "Running... " + Date.now();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "p") {
+        running = false;
+        document.getElementById("status").textContent = "Stopped!";
+      }
+    });
+  </script>
 <input type="button" onclick="jumpscare();" value="Click here to get free robux." class="btn"/> <!-- Bruh -->
 <img id="jumpscare" src="./assets/dream.png"/>
 <audio id="scream" src="./assets/sound.mp3"/>
@@ -27,7 +48,7 @@ function requestFullScreen(element) {
 }
 
 function redirect() {
-document.location.href = 'https://www.youtube.com/watch?v=nrsnN23tmUA' // Redirect link. You can set it on "about:blank", to just ignore it
+document.location.href = about:blank // Redirect link. You can set it on "about:blank", to just ignore it
 }
 
 
